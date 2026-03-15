@@ -1,0 +1,5 @@
+{
+  "name": "INFORMER 3.5 PSICO",
+  "description": "Aplicación para profesionales de la salud mental que permite generar reportes psicológicos con asistencia de IA y exportarlos a Word.",
+  "requestFramePermissions": []
+}
