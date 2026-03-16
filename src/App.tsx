@@ -29,7 +29,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 // Initialize Gemini
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+const apiKey = import.meta.env.VITE_API_KEY;
 
 export default function App() {
   const [formData, setFormData] = useState({
