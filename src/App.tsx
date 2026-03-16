@@ -52,43 +52,57 @@ export default function App() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const improveWithAI = async (field: 'reportePsicologico' | 'recomendaciones') => {
-    const textToImprove = formData[field];
-    if (!textToImprove || textToImprove.trim().length < 10) {
-      setStatus({ type: 'error', message: 'Por favor, escribe al menos un párrafo para mejorar.' });
-      return;
+const improveWithAI = async (field: 'reportePsicologico' | 'recomendaciones') => {
+  const textToImprove = formData[field];
+
+  if (!textToImprove || textToImprove.trim().length < 10) {
+    setStatus({ type: 'error', message: 'Por favor, escribe al menos un párrafo para mejorar.' });
+    return;
+  }
+
+  if (!apiKey) {
+    setStatus({ type: 'error', message: 'La API key de Gemini no está configurada en Vercel.' });
+    return;
+  }
+
+  setLoading(prev => ({ ...prev, [field]: true }));
+  setStatus(null);
+
+  try {
+    const genAI = new GoogleGenAI({ apiKey });
+
+    const model = 'gemini-3-flash-preview';
+    const prompt = `Actúa como un psicólogo experto con excelente redacción.
+Mejora el siguiente texto de un reporte psicológico, corrigiendo ortografía, sintaxis y mejorando la fluidez profesional sin cambiar el significado original ni los datos clínicos.
+
+Texto a mejorar:
+"${textToImprove}"
+
+Responde ÚNICAMENTE con el texto mejorado, sin introducciones ni explicaciones adicionales.`;
+
+    const result = await genAI.models.generateContent({
+      model,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
+
+    const improvedText = typeof result.text === 'string' ? result.text : '';
+
+    if (improvedText.trim()) {
+      handleInputChange(field, improvedText.trim());
+      setStatus({ type: 'success', message: 'Texto mejorado con éxito.' });
+    } else {
+      setStatus({ type: 'error', message: 'La IA no devolvió texto para mostrar.' });
     }
-
-    setLoading(prev => ({ ...prev, [field]: true }));
-    setStatus(null);
-
-    try {
-      const model = "gemini-3-flash-preview";
-      const prompt = `Actúa como un psicólogo experto con excelente redacción. 
-      Mejora el siguiente texto de un reporte psicológico, corrigiendo ortografía, sintaxis y mejorando la fluidez profesional sin cambiar el significado original ni los datos clínicos.
-      
-      Texto a mejorar:
-      "${textToImprove}"
-      
-      Responde ÚNICAMENTE con el texto mejorado, sin introducciones ni explicaciones adicionales.`;
-
-      const result = await genAI.models.generateContent({
-        model: model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      });
-
-      const improvedText = result.text;
-      if (improvedText) {
-        handleInputChange(field, improvedText.trim());
-        setStatus({ type: 'success', message: 'Texto mejorado con éxito.' });
-      }
-    } catch (error) {
-      console.error("Error improving text:", error);
-      setStatus({ type: 'error', message: 'Hubo un error al conectar con la IA. Inténtalo de nuevo.' });
-    } finally {
-      setLoading(prev => ({ ...prev, [field]: false }));
-    }
-  };
+  } catch (error: any) {
+    console.error('Error improving text:', error);
+    setStatus({
+      type: 'error',
+      message: `Hubo un error al conectar con la IA${error?.message ? `: ${error.message}` : '.'}`,
+    });
+  } finally {
+    setLoading(prev => ({ ...prev, [field]: false }));
+  }
+};
 
   const exportToWord = async () => {
     setLoading(prev => ({ ...prev, exporting: true }));
