@@ -69,30 +69,49 @@ const improveWithAI = async (field: 'reportePsicologico' | 'recomendaciones') =>
   setStatus(null);
 
   try {
-    const genAI = new GoogleGenAI({ apiKey });
-
-    const model = 'gemini-3-flash-preview';
     const prompt = `Actúa como un psicólogo experto con excelente redacción.
 Mejora el siguiente texto de un reporte psicológico, corrigiendo ortografía, sintaxis y mejorando la fluidez profesional sin cambiar el significado original ni los datos clínicos.
 
 Texto a mejorar:
 "${textToImprove}"
 
-Responde ÚNICAMENTE con el texto mejorado, sin introducciones ni explicaciones adicionales.`;
+Responde únicamente con el texto mejorado, sin introducciones ni explicaciones adicionales.`;
 
-    const result = await genAI.models.generateContent({
-      model,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
+      }
+    );
 
-    const improvedText = typeof result.text === 'string' ? result.text : '';
+    const data = await response.json();
 
-    if (improvedText.trim()) {
-      handleInputChange(field, improvedText.trim());
-      setStatus({ type: 'success', message: 'Texto mejorado con éxito.' });
-    } else {
-      setStatus({ type: 'error', message: 'La IA no devolvió texto para mostrar.' });
+    if (!response.ok) {
+      throw new Error(data?.error?.message || `Error HTTP ${response.status}`);
     }
+
+    const improvedText =
+      data?.candidates?.[0]?.content?.parts
+        ?.map((part: any) => part?.text || '')
+        .join('')
+        .trim() || '';
+
+    if (!improvedText) {
+      throw new Error('La IA no devolvió texto.');
+    }
+
+    handleInputChange(field, improvedText);
+    setStatus({ type: 'success', message: 'Texto mejorado con éxito.' });
   } catch (error: any) {
     console.error('Error improving text:', error);
     setStatus({
@@ -278,7 +297,8 @@ Responde ÚNICAMENTE con el texto mejorado, sin introducciones ni explicaciones 
                 Reporte Psicológico
               </label>
               <button
-                onClick={() => improveWithAI('reportePsicologico')}
+  type="button"
+  onClick={() => improveWithAI('reportePsicologico')}
                 disabled={loading.reportePsicologico}
                 className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold hover:bg-blue-100 transition-colors disabled:opacity-50"
               >
@@ -311,7 +331,8 @@ Responde ÚNICAMENTE con el texto mejorado, sin introducciones ni explicaciones 
                 Recomendaciones
               </label>
               <button
-                onClick={() => improveWithAI('recomendaciones')}
+  type="button"
+  onClick={() => improveWithAI('recomendaciones')}
                 disabled={loading.recomendaciones}
                 className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold hover:bg-blue-100 transition-colors disabled:opacity-50"
               >
@@ -339,7 +360,8 @@ Responde ÚNICAMENTE con el texto mejorado, sin introducciones ni explicaciones 
           {/* Export Button */}
           <div className="pt-6 border-t border-slate-100">
             <button
-              onClick={exportToWord}
+  type="button"
+  onClick={exportToWord}
               disabled={loading.exporting || !formData.nombrePaciente || !formData.reportePsicologico}
               className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-200"
             >
