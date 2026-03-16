@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
+
 import { 
   FileText, 
   User, 
